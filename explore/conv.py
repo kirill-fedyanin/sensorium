@@ -33,7 +33,7 @@ def get_loader(file_names):
 
 
 def main():
-    print(os.listdir('.'))
+    print(os.listdir(''))
     data_file = 'notebooks/data/static23964-4-22-GrayImageNet-94c6ff995dac583098847cfecd43e7b6.zip'
     train_loader, val_loader, _, _ = get_loader(data_file)
 
