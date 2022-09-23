@@ -1,3 +1,6 @@
+*.pth
+tmp
+data
 secrets/
 *MNIST/
 *egg-info/
