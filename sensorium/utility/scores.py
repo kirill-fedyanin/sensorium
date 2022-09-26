@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from neuralpredictors.measures.np_functions import corr, fev
 from neuralpredictors.training import eval_state, device_state
@@ -116,7 +117,7 @@ def get_signal_correlations(
     the means across repeats.
     """
     correlations = {}
-    for data_key, dataloader in dataloaders[tier].items():
+    for data_key, dataloader in tqdm(dataloaders[tier].items()):
         trial_indices, image_ids, neuron_ids, responses = get_data_filetree_loader(
             dataloader=dataloader, tier=tier
         )
