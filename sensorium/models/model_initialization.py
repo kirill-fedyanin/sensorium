@@ -1,17 +1,23 @@
 import torch
+from torch import nn
 from nnfabrik.builder import get_model
 
 
-class SotaEnsemble:
+class SotaEnsemble(nn.Module):
     def __init__(self, dataloaders, checkpoint_paths):
+        super().__init__()
         self.models = []
+        # We need to register dull param
+        # to make neurapredictors functions correctly assign the device
+        self.param = nn.Parameter(torch.tensor([42.]))
+
         for path in checkpoint_paths:
-            self.models.append(sota(dataloaders, path))
+            self.models.append(sota(dataloaders, path).cuda())
 
     def __call__(self, *args, **kwargs):
-        return torch.mean([
-            model(*args, **kwargs) for model in self.models()
-        ])
+        return torch.mean(torch.stack([
+            model(*args, **kwargs) for model in self.models
+        ]), dim=0)
 
 
 

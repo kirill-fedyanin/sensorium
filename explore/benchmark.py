@@ -11,7 +11,7 @@ from nnfabrik.builder import get_data
 import os
 from sensorium.utility import get_signal_correlations, get_fev
 from sensorium.utility.measure_helpers import get_df_for_scores
-from sensorium.models.model_initialization import sota
+from sensorium.models.model_initialization import sota, SotaEnsemble
 from sensorium.datasets.dataset_initialization import init_loaders
 
 basepath = "./notebooks/data/"
@@ -52,9 +52,14 @@ def benchmark(dataloaders, model, tier='validation'):
 def main():
     # just change the model here
     dataloaders = init_loaders(basepath)
-    checkpoint = 'model_checkpoints/generalization_model.pth'
-    print(checkpoint)
-    model = sota(dataloaders, checkpoint)
+    # checkpoint = 'model_checkpoints/generalization_model.pth'
+    # print(checkpoint)
+    # model = sota(dataloaders, checkpoint)
+
+
+    checkpoints = [f'model_checkpoints/generalization_model_{n}.pth' for n in range(41, 45)]
+    model = SotaEnsemble(dataloaders, checkpoints).cuda()
+
     # dataloaders = init_loaders(single=True)
     # model = ln_model(
     #     dataloaders,

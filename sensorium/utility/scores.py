@@ -4,6 +4,7 @@ import torch
 
 from neuralpredictors.measures.np_functions import corr, fev
 from neuralpredictors.training import eval_state, device_state
+from contextlib import contextmanager
 
 from .submission import get_data_filetree_loader
 
@@ -44,6 +45,7 @@ def model_predictions(model, dataloader, data_key, device="cpu"):
             else (batch["inputs"], batch["targets"])
         )
         batch_kwargs = batch._asdict() if not isinstance(batch, dict) else batch
+
 
         with torch.no_grad():
             with device_state(model, device):
