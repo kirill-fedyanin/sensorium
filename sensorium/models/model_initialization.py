@@ -2,6 +2,19 @@ import torch
 from nnfabrik.builder import get_model
 
 
+class SotaEnsemble:
+    def __init__(self, dataloaders, checkpoint_paths):
+        self.models = []
+        for path in checkpoint_paths:
+            self.models.append(sota(dataloaders, path))
+
+    def __call__(self, *args, **kwargs):
+        return torch.mean([
+            model(*args, **kwargs) for model in self.models()
+        ])
+
+
+
 def sota(dataloaders, checkpoint_path):
     model_fn = 'sensorium.models.stacked_core_full_gauss_readout'
     model_config = {

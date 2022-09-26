@@ -27,7 +27,7 @@ def benchmark(dataloaders, model, tier='validation'):
         session_dict=correlation_to_average,
         measure_attribute=measure_attribute,
     )
-    print(df)
+    print(df[measure_attribute].mean())
     fig = plt.figure(figsize=(15,8))
     sns.boxenplot(x="dataset", y=measure_attribute, data=df, )
     plt.xticks(rotation = 45)
@@ -52,17 +52,15 @@ def benchmark(dataloaders, model, tier='validation'):
 def main():
     # just change the model here
     dataloaders = init_loaders(basepath)
-    model = sota(
-        dataloaders,
-        'model_checkpoints/generalization_model_43.pth'
-        # "notebooks/model_tutorial/model_checkpoints/pretrained/generalization_model.pth"
-    )
-
+    checkpoint = 'model_checkpoints/generalization_model.pth'
+    print(checkpoint)
+    model = sota(dataloaders, checkpoint)
     # dataloaders = init_loaders(single=True)
     # model = ln_model(
     #     dataloaders,
     #     "model_checkpoints/notebook_examples/sensorium_ln_model.pth"
     # )
+
 
     benchmark(dataloaders, model, tier='test')
 
