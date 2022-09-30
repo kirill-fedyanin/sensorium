@@ -1,3 +1,7 @@
+"""
+lvl 9
+How many images and how many records by id?
+"""
 from pathlib import Path
 import os
 
@@ -33,7 +37,6 @@ def get_tensor(base_dir, tier='train'):
     for i, image in enumerate(images):
         plt.imshow(image[0], cmap='gray')
         plt.show()
-
 
 
 class SensoirumDataset(Dataset):
@@ -81,8 +84,8 @@ def get_repeats(base_dir):
 
 def main():
     base_dir = Path('data') / os.listdir('data')[0]
-    # get_repeats(base_dir)
-    get_tensor(base_dir, 'test')
+    get_repeats(base_dir)
+    # get_tensor(base_dir, 'test')
 
     # explore_meta(data_dir)
 
