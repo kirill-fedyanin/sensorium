@@ -1,9 +1,11 @@
 import warnings
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from neuralpredictors.measures.np_functions import corr, fev
 from neuralpredictors.training import eval_state, device_state
+from contextlib import contextmanager
 
 from .submission import get_data_filetree_loader
 
@@ -44,6 +46,7 @@ def model_predictions(model, dataloader, data_key, device="cpu"):
             else (batch["inputs"], batch["targets"])
         )
         batch_kwargs = batch._asdict() if not isinstance(batch, dict) else batch
+
 
         with torch.no_grad():
             with device_state(model, device):
@@ -114,7 +117,7 @@ def get_signal_correlations(
     the means across repeats.
     """
     correlations = {}
-    for data_key, dataloader in dataloaders[tier].items():
+    for data_key, dataloader in tqdm(dataloaders[tier].items()):
         trial_indices, image_ids, neuron_ids, responses = get_data_filetree_loader(
             dataloader=dataloader, tier=tier
         )

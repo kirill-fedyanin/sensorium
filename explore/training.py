@@ -59,13 +59,16 @@ def init_model(dataloaders):
 
 
 def main():
+    print('started')
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
     seed = args.seed
     basepath = "./notebooks/data/"
+    print('args')
     dataloaders = init_loaders(basepath)
-    model = init_model(dataloaders)
+    model = init_model(dataloaders).cuda()
+    print('inited')
 
     trainer_fn = "sensorium.training.standard_trainer"
 
@@ -77,6 +80,7 @@ def main():
         'lr_init': 0.009,
     }
 
+    print('training')
     trainer = get_trainer(trainer_fn=trainer_fn,
                           trainer_config=trainer_config)
 
