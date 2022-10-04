@@ -2,11 +2,10 @@ import os
 from nnfabrik.builder import get_data
 
 
-def init_loaders(basepath, single=False):
-    if single:
-        filenames = ['notebooks/data/static26872-17-20-GrayImageNet-94c6ff995dac583098847cfecd43e7b6.zip', ]
-    else:
-        filenames = [os.path.join(basepath, file) for file in os.listdir(basepath) if ".zip" in file ]
+
+def init_loaders(basepath, **kwargs):
+    # as filenames, we'll select all 7 datasets
+    filenames = [os.path.join(basepath, file) for file in os.listdir(basepath) if ".zip" in file ]
 
     dataset_fn = 'sensorium.datasets.static_loaders'
     dataset_config = {
@@ -15,8 +14,9 @@ def init_loaders(basepath, single=False):
         'include_behavior': False,
         'include_eye_position': False,
         'batch_size': 128,
-        'scale':.25,
     }
+
+    dataset_config.update(kwargs)
 
     dataloaders = get_data(dataset_fn, dataset_config)
     return dataloaders

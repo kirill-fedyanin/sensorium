@@ -1,3 +1,8 @@
+"""
+Lvl 3
+benchmark ensemble
+"""
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 from argparse import ArgumentParser
@@ -12,10 +17,8 @@ from sensorium.utility.measure_helpers import get_df_for_scores
 from sensorium.models.model_initialization import sota, SotaEnsemble
 from sensorium.datasets.dataset_initialization import init_loaders
 
-basepath = "./notebooks/data/"
 
-
-def benchmark(dataloaders, model, tier='validation'):
+def benchmark(dataloaders, model, tier='validation', show_feves=False):
     correlation_to_average = get_signal_correlations(
         model, dataloaders, tier=tier, device="cuda", as_dict=True
     )
@@ -32,39 +35,41 @@ def benchmark(dataloaders, model, tier='validation'):
     sns.despine(trim=True)
     plt.show()
 
-    # feves = get_fev(model, dataloaders, tier="test", device="cuda", as_dict=True)
-    # measure_attribute = "FEVE"
-    # df = get_df_for_scores(
-    #     session_dict=feves,
-    #     measure_attribute=measure_attribute,
-    # )
-    #
-    # fig = plt.figure(figsize=(15, 8))
-    # sns.boxenplot(x="dataset", y=measure_attribute, data=df, )
-    # plt.xticks(rotation=45)
-    # plt.ylim([-.1, 1])
-    # sns.despine(trim=True)
-    # plt.show()
+    if show_feves:
+        feves = get_fev(model, dataloaders, tier="test", device="cuda", as_dict=True)
+        measure_attribute = "FEVE"
+        df = get_df_for_scores(
+            session_dict=feves,
+            measure_attribute=measure_attribute,
+        )
+
+        fig = plt.figure(figsize=(15, 8))
+        sns.boxenplot(x="dataset", y=measure_attribute, data=df, )
+        plt.xticks(rotation=45)
+        plt.ylim([-.1, 1])
+        sns.despine(trim=True)
+        plt.show()
 
 
 def main():
-    # just change the model here
-    dataloaders = init_loaders(basepath)
-    checkpoint = 'model_checkpoints/big_generalization_model_42.pth'
-    print(checkpoint)
-    model = sota(dataloaders, checkpoint)
+    parser = ArgumentParser()
+    parser.add_argument('--data_path', type=str, default="./notebooks/data/")
+    parser.add_argument("--model", type=str, default='generalization')
+    parser.add_argument("--checkpoint_path", type=str, default='model_checkpoints/generalization_model.pth')
+    parser.add_argument("--show_feves", default=False, action='store_true')
+    args = parser.parse_args()
 
-    # checkpoints = [f'model_checkpoints/generalization_model_{n}.pth' for n in range(41, 61)]
-    # model = SotaEnsemble(dataloaders, checkpoints).cuda()
+    dataloaders = init_loaders(args.data_path)
 
-    # dataloaders = init_loaders(single=True)
-    # model = ln_model(
-    #     dataloaders,
-    #     "model_checkpoints/notebook_examples/sensorium_ln_model.pth"
-    # )
+    if args.model == 'generalization':
+        model = sota(dataloaders, args.checkpoint_path)
+    elif args.model == 'ensemble':
+        checkpoints = [f'{args.checkpoint_path}_{n}.pth' for n in range(41, 51)]
+        model = SotaEnsemble(dataloaders, checkpoints).cuda()
+    else:
+        raise ValueError(f'Unknown model {args.model}')
 
-
-    benchmark(dataloaders, model, tier='test')
+    benchmark(dataloaders, model, tier='test', show_feves=args.show_feves)
 
 
 if __name__ == '__main__':
