@@ -68,27 +68,29 @@ def main():
     args = parser.parse_args()
     seed = args.seed
     basepath = "./notebooks/data/"
-    dataloaders = init_loaders(basepath)
+    dataloaders = init_loaders(basepath, scale=0.25)
     model = init_model(dataloaders).cuda()
 
-    trainer_fn = "sensorium.training.standard_trainer"
 
-    trainer_config = {
-        'max_iter': 200,
-        'verbose': False,
-        'lr_decay_steps': 4,
-        'avg_loss': False,
-        'lr_init': 0.009,
-    }
+    from sensorium.training import standard_trainer
+    validation_score, trainer_output, state_dict = standard_trainer(
+        model,
+        dataloaders,
+        seed=seed,
+        max_iter=5,
+        verbose=True,
+        lr_decay_steps=4,
+        avg_loss=False,
+        lr_init=0.009,
+        track_training=True
+    )
 
-    print('Start training')
-    trainer = get_trainer(trainer_fn=trainer_fn, trainer_config=trainer_config)
-
-    validation_score, trainer_output, state_dict = trainer(model, dataloaders, seed=seed)
+    # trainer(model, dataloaders, seed=seed)
     print(validation_score)
     print(trainer_output)
-    torch.save(model.state_dict(), f'model_checkpoints/big_generalization_model_{seed}.pth')
+    torch.save(model.state_dict(), f'model_checkpoints/smoll_generalization_model_{seed}.pth')
 
 
 if __name__ == '__main__':
     main()
+

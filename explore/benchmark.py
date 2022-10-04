@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
+from argparse import ArgumentParser
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -49,13 +50,12 @@ def benchmark(dataloaders, model, tier='validation'):
 def main():
     # just change the model here
     dataloaders = init_loaders(basepath)
-    # checkpoint = 'model_checkpoints/generalization_model.pth'
-    # print(checkpoint)
-    # model = sota(dataloaders, checkpoint)
+    checkpoint = 'model_checkpoints/big_generalization_model_42.pth'
+    print(checkpoint)
+    model = sota(dataloaders, checkpoint)
 
-
-    checkpoints = [f'model_checkpoints/generalization_model_{n}.pth' for n in range(41, 61)]
-    model = SotaEnsemble(dataloaders, checkpoints).cuda()
+    # checkpoints = [f'model_checkpoints/generalization_model_{n}.pth' for n in range(41, 61)]
+    # model = SotaEnsemble(dataloaders, checkpoints).cuda()
 
     # dataloaders = init_loaders(single=True)
     # model = ln_model(
