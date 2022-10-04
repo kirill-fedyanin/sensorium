@@ -1,8 +1,3 @@
-"""
-Lvl 3
-benchmark ensemble
-"""
-
 import matplotlib.pyplot as plt
 import seaborn as sns
 from argparse import ArgumentParser
@@ -16,6 +11,7 @@ from sensorium.utility import get_signal_correlations, get_fev
 from sensorium.utility.measure_helpers import get_df_for_scores
 from sensorium.models.model_initialization import sota, SotaEnsemble
 from sensorium.datasets.dataset_initialization import init_loaders
+from sensorium.models.model_initialization import init_model
 
 
 def benchmark(dataloaders, model, tier='validation', show_feves=False):
@@ -60,14 +56,7 @@ def main():
     args = parser.parse_args()
 
     dataloaders = init_loaders(args.data_path)
-
-    if args.model == 'generalization':
-        model = sota(dataloaders, args.checkpoint_path)
-    elif args.model == 'ensemble':
-        checkpoints = [f'{args.checkpoint_path}_{n}.pth' for n in range(41, 51)]
-        model = SotaEnsemble(dataloaders, checkpoints).cuda()
-    else:
-        raise ValueError(f'Unknown model {args.model}')
+    model = init_model(args.model, args.checkpoint_path, dataloaders)
 
     benchmark(dataloaders, model, tier='test', show_feves=args.show_feves)
 
