@@ -47,10 +47,17 @@ def main():
     print('started')
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument(
+        '--loss', type=str, default='PoissonLoss',
+        choices=['ExponentialLoss', 'PoissonLoss', 'AnscombeMSE']
+    )
+    parser.add_argument('--note', type=str, default='', help='Checkpoint name modification')
     args = parser.parse_args()
     seed = args.seed
     basepath = "./notebooks/data/"
-    dataloaders = init_loaders(basepath)
+    dataloaders = init_loaders(
+        basepath, scale=0.25
+    )
     model = init_model(dataloaders).cuda()
 
     trainer_fn = "sensorium.training.standard_trainer"
@@ -62,6 +69,7 @@ def main():
         'lr_init': 0.009,
         'track_training': True,
         'verbose': True,
+        'loss': args.loss
     }
 
     print('Start training')
@@ -70,7 +78,7 @@ def main():
     validation_score, trainer_output, state_dict = trainer(model, dataloaders, seed=seed)
     print(validation_score)
     print(trainer_output)
-    torch.save(model.state_dict(), f'model_checkpoints/big_generalization_model_{seed}.pth')
+    torch.save(model.state_dict(), f'model_checkpoints/generalization_model_{args.note}{seed}.pth')
 
 
 if __name__ == '__main__':

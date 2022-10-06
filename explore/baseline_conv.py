@@ -1,6 +1,7 @@
 """
-Lvl 2
-Leave 10 neurons
+Lvl 6
+Different losses
+Are they working together?
 """
 import os
 from argparse import ArgumentParser
@@ -11,6 +12,7 @@ import pandas as pd
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tqdm import tqdm
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -46,18 +48,24 @@ def main():
     print('started')
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument(
+        '--loss', type=str, default='PoissonLoss',
+        choices=['ExponentialLoss', 'PoissonLoss', 'AnscombeMSE']
+    )
+
     args = parser.parse_args()
     seed = args.seed
     basepath = "./notebooks/data/"
     dataloaders = init_loaders(
-        basepath, single=True
-
+        basepath, single=True, scale=0.25
     )
 
-    # for epoch in range(10):
-    #     for batch in tqdm(dataloaders['train']['21067-10-18']):
-    #         pass
-
+    # ys = []
+    # for batch in tqdm(dataloaders['train']['21067-10-18']):
+    #     ys.append(batch.responses)
+    #     pass
+    # ys = torch.cat(ys).cpu().detach().numpy()
+    # return
 
     model = init_model(dataloaders).cuda()
 
@@ -71,6 +79,7 @@ def main():
         avg_loss=False,
         lr_init=0.009,
         track_training=True,
+        loss=args.loss,
     )
 
     # trainer(model, dataloaders, seed=seed)
