@@ -99,6 +99,7 @@ def standard_trainer(
     model.train()
 
     criterion = getattr(modules, loss_function)(avg=avg_loss)
+
     stop_closure = partial(
         getattr(scores, stop_function),
         dataloaders=dataloaders["validation"],

@@ -7,16 +7,85 @@ with small number neurons there is no speed up, but also the convergence is miss
 """
 from nnfabrik.utility.nn_helpers import set_random_seed, get_dims_for_loader_dict
 from neuralpredictors.utils import get_module_output
-from neuralpredictors.layers.encoders import FiringRateEncoder
+# from neuralpredictors.layers.encoders import FiringRateEncoder
 from neuralpredictors.layers.shifters import MLPShifter, StaticAffine2dShifter
 from neuralpredictors.layers.cores import (
     Stacked2dCore,
 )
 
 from nnfabrik.builder import get_model
+from torch import nn
 
 from sensorium.models.readouts import MultipleFullGaussian2d
 from sensorium.models.utility import prepare_grid
+
+global_i = 1
+
+class FiringRateEncoder(nn.Module):
+    def __init__(self, core, readout, *, shifter=None, modulator=None, elu_offset=0.0):
+        """
+        An Encoder that wraps the core, readout and optionally a shifter amd modulator into one model.
+        The output is one positive value that can be interpreted as a firing rate, for example for a Poisson distribution.
+        Args:
+            core (nn.Module): Core model. Refer to neuralpredictors.layers.cores
+            readout (nn.ModuleDict): MultiReadout model. Refer to neuralpredictors.layers.readouts
+            elu_offset (float): Offset value in the final elu non-linearity. Defaults to 0.
+            shifter (optional[nn.ModuleDict]): Shifter network. Refer to neuralpredictors.layers.shifters. Defaults to None.
+            modulator (optional[nn.ModuleDict]): Modulator network. Modulator networks are not implemented atm (24/06/2021). Defaults to None.
+        """
+        super().__init__()
+        self.core = core
+        self.readout = readout
+        self.shifter = shifter
+        self.modulator = modulator
+        self.offset = elu_offset
+
+    def forward(
+        self,
+        inputs,
+        *args,
+        targets=None,
+        data_key=None,
+        behavior=None,
+        pupil_center=None,
+        trial_idx=None,
+        shift=None,
+        detach_core=False,
+        **kwargs
+    ):
+        global global_i
+        global_i += 1
+        print(global_i)
+
+        if global_i % 100 == 0:
+            import ipdb; ipdb.set_trace()
+
+        x = self.core(inputs)
+        if detach_core:
+            x = x.detach()
+
+        if self.shifter:
+            if pupil_center is None:
+                raise ValueError("pupil_center is not given")
+            shift = self.shifter[data_key](pupil_center, trial_idx)
+
+        x = self.readout(x, data_key=data_key, shift=shift, **kwargs)
+
+        if self.modulator:
+            if behavior is None:
+                raise ValueError("behavior is not given")
+            x = self.modulator[data_key](x, behavior=behavior)
+
+        return nn.functional.elu(x + self.offset) + 1
+
+    def regularizer(self, data_key=None, reduction="sum", average=None, detach_core=False):
+        reg = self.core.regularizer().detach() if detach_core else self.core.regularizer()
+        reg += self.readout.regularizer(data_key=data_key, reduction=reduction, average=average)
+        if self.shifter:
+            reg += self.shifter.regularizer(data_key=data_key)
+        if self.modulator:
+            reg += self.modulator.regularizer(data_key=data_key)
+        return reg
 
 
 def stacked_core_full_gauss_readout(
@@ -128,6 +197,7 @@ def stacked_core_full_gauss_readout(
         use_avg_reg=use_avg_reg,
     )
 
+
     in_shapes_dict = {
         k: get_module_output(core, v[in_name])[1:]
         for k, v in session_shape_dict.items()
@@ -147,25 +217,6 @@ def stacked_core_full_gauss_readout(
         source_grids=source_grids,
     )
 
-    if shifter is True:
-        data_keys = [i for i in dataloaders.keys()]
-        if shifter_type == "MLP":
-            shifter = MLPShifter(
-                data_keys=data_keys,
-                input_channels=input_channels_shifter,
-                hidden_channels_shifter=hidden_channels_shifter,
-                shift_layers=shift_layers,
-                gamma_shifter=gamma_shifter,
-            )
-
-        elif shifter_type == "StaticAffine":
-            shifter = StaticAffine2dShifter(
-                data_keys=data_keys,
-                input_channels=input_channels_shifter,
-                bias=shifter_bias,
-                gamma_shifter=gamma_shifter,
-            )
-
     model = FiringRateEncoder(
         core=core,
         readout=readout,
@@ -176,32 +227,33 @@ def stacked_core_full_gauss_readout(
     return model
 
 
-def init_model(dataloaders):
-    model_fn = 'sensorium.models.stacked_core_full_gauss_readout'
-    model_config = {'pad_input': False,
-                    'layers': 4,
-                    'input_kern': 9,
-                    'gamma_input': 6.3831,
-                    'gamma_readout': 0.0076,
-                    'hidden_kern': 7,
-                    'hidden_channels': 64,
-                    'depth_separable': True,
-                    'grid_mean_predictor': {'type': 'cortex',
-                                            'input_dimensions': 2,
-                                            'hidden_layers': 1,
-                                            'hidden_features': 30,
-                                            'final_tanh': True},
-                    'init_sigma': 0.1,
-                    'init_mu_range': 0.3,
-                    'gauss_type': 'full',
-                    'shifter': False,
-                    'stack': -1,
-                    }
+def init_model(dataloaders, seed=42):
 
-    model = get_model(model_fn=model_fn,
-                      model_config=model_config,
-                      dataloaders=dataloaders,
-                      seed=42, )
+    model_config = {
+        'pad_input': False,
+        'layers': 4,
+        'input_kern': 9,
+        'gamma_input': 6.3831,
+        'gamma_readout': 0.0076,
+        'hidden_kern': 7,
+        'hidden_channels': 64,
+        'depth_separable': True,
+        'grid_mean_predictor': {
+            'type': 'cortex',
+            'input_dimensions': 2,
+            'hidden_layers': 1,
+            'hidden_features': 30,
+            'final_tanh': True
+        },
+        'init_sigma': 0.1,
+        'init_mu_range': 0.3,
+        'gauss_type': 'full',
+        'shifter': False,
+        'stack': -1,
+    }
+
+    model = stacked_core_full_gauss_readout(dataloaders, seed=seed, **model_config)
+
     return model
 
 
@@ -234,3 +286,6 @@ def init_model(dataloaders):
 #                       dataloaders=dataloaders,
 #                       seed=42, )
 #     return model
+
+
+

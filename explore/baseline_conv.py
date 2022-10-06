@@ -1,7 +1,4 @@
 """
-Lvl 6
-Different losses
-Are they working together?
 """
 import os
 from argparse import ArgumentParser
@@ -48,10 +45,6 @@ def main():
     print('started')
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument(
-        '--loss', type=str, default='PoissonLoss',
-        choices=['ExponentialLoss', 'PoissonLoss', 'AnscombeMSE']
-    )
 
     args = parser.parse_args()
     seed = args.seed
@@ -67,7 +60,7 @@ def main():
     # ys = torch.cat(ys).cpu().detach().numpy()
     # return
 
-    model = init_model(dataloaders).cuda()
+    model = init_model(dataloaders, seed=seed).cuda()
 
     validation_score, trainer_output, state_dict = standard_trainer(
         model,
@@ -77,9 +70,9 @@ def main():
         verbose=True,
         lr_decay_steps=4,
         avg_loss=False,
+        # lr_init=0.009,
         lr_init=0.009,
         track_training=True,
-        loss=args.loss,
     )
 
     # trainer(model, dataloaders, seed=seed)
