@@ -57,10 +57,11 @@ def main():
 
     trainer_config = {
         'max_iter': 200,
-        'verbose': False,
         'lr_decay_steps': 4,
         'avg_loss': False,
         'lr_init': 0.009,
+        'track_training': True,
+        'verbose': True,
     }
 
     print('Start training')

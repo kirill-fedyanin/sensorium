@@ -1,45 +1,45 @@
+"""
+Lvl 2
+Leave 10 neurons
+"""
+import os
+from argparse import ArgumentParser
+
 import torch
 import numpy as np
 import pandas as pd
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-from argparse import ArgumentParser
 
 import warnings
 warnings.filterwarnings('ignore')
 
 from nnfabrik.builder import get_data, get_model, get_trainer
-import os
+from sensorium.training import standard_trainer
+from explore.baseline_conv_model import init_model
 
 
-def init_model(dataloaders):
-    model_fn = 'sensorium.models.stacked_core_full_gauss_readout'
-    model_config = {'pad_input': False,
-                    'layers': 4,
-                    'input_kern': 9,
-                    'gamma_input': 6.3831,
-                    'gamma_readout': 0.0076,
-                    'hidden_kern': 7,
-                    'hidden_channels': 64,
-                    'depth_separable': True,
-                    'grid_mean_predictor': {'type': 'cortex',
-                                            'input_dimensions': 2,
-                                            'hidden_layers': 1,
-                                            'hidden_features': 30,
-                                            'final_tanh': True},
-                    'init_sigma': 0.1,
-                    'init_mu_range': 0.3,
-                    'gauss_type': 'full',
-                    'shifter': False,
-                    'stack': -1,
-                    }
 
-    model = get_model(model_fn=model_fn,
-                      model_config=model_config,
-                      dataloaders=dataloaders,
-                      seed=42, )
-    return model
+def init_loaders(basepath, single=False, **kwargs):
+    # as filenames, we'll select all 7 datasets
+    filenames = sorted([os.path.join(basepath, file) for file in os.listdir(basepath) if ".zip" in file ])
+    if single:
+        filenames = filenames[:1]
+
+    dataset_fn = 'sensorium.datasets.static_loaders'
+    dataset_config = {
+        'paths': filenames,
+        'normalize': True,
+        'include_behavior': False,
+        'include_eye_position': False,
+        'batch_size': 128,
+    }
+
+    dataset_config.update(kwargs)
+
+    dataloaders = get_data(dataset_fn, dataset_config)
+    return dataloaders
 
 
 def main():
@@ -49,21 +49,28 @@ def main():
     args = parser.parse_args()
     seed = args.seed
     basepath = "./notebooks/data/"
-    dataloaders = init_loaders(basepath, scale=0.25)
+    dataloaders = init_loaders(
+        basepath, single=True
+
+    )
+
+    # for epoch in range(10):
+    #     for batch in tqdm(dataloaders['train']['21067-10-18']):
+    #         pass
+
+
     model = init_model(dataloaders).cuda()
 
-
-    from sensorium.training import standard_trainer
     validation_score, trainer_output, state_dict = standard_trainer(
         model,
         dataloaders,
         seed=seed,
-        max_iter=5,
+        max_iter=10,
         verbose=True,
         lr_decay_steps=4,
         avg_loss=False,
         lr_init=0.009,
-        track_training=True
+        track_training=True,
     )
 
     # trainer(model, dataloaders, seed=seed)
@@ -74,4 +81,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

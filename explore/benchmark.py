@@ -53,9 +53,14 @@ def main():
     parser.add_argument("--model", type=str, default='generalization')
     parser.add_argument("--checkpoint_path", type=str, default='model_checkpoints/generalization_model.pth')
     parser.add_argument("--show_feves", default=False, action='store_true')
+    parser.add_argument("--scaled_input", default=False, action='store_true')
     args = parser.parse_args()
 
-    dataloaders = init_loaders(args.data_path)
+    if args.scaled_input:
+        dataloaders = init_loaders(args.data_path, scale=0.25)
+    else:
+        dataloaders = init_loaders(args.data_path)
+
     model = init_model(args.model, args.checkpoint_path, dataloaders)
 
     benchmark(dataloaders, model, tier='test', show_feves=args.show_feves)
