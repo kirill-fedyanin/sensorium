@@ -1,4 +1,7 @@
 """
+What is the question
+how exactly are the sampled?
+are nearby similar?
 """
 import os
 from argparse import ArgumentParser
@@ -17,7 +20,6 @@ warnings.filterwarnings('ignore')
 from nnfabrik.builder import get_data, get_model, get_trainer
 from sensorium.training import standard_trainer
 from explore.baseline_conv_model import init_model
-
 
 
 def init_loaders(basepath, single=False, **kwargs):
@@ -41,6 +43,25 @@ def init_loaders(basepath, single=False, **kwargs):
     return dataloaders
 
 
+def plt_activations(dataloader):
+    batch = next(iter(dataloader))
+
+    positions = dataloader.dataset.neurons.cell_motor_coordinates
+    print(positions.shape)
+    # print(np.std(positions[:, 2]))
+
+    for i, r in enumerate(batch.responses):
+        r = r.cpu().numpy()
+        if i == 20:
+            break
+        plt.figure(figsize=(10, 8))
+        plt.scatter(positions[:, 0], positions[:, 1], c=r, s=20, alpha=0.3, cmap='Reds')
+        # plt.legend()
+        plt.colorbar()
+        plt.show()
+
+
+
 def main():
     print('started')
     parser = ArgumentParser()
@@ -52,6 +73,11 @@ def main():
     dataloaders = init_loaders(
         basepath, single=True, scale=0.25
     )
+
+    plt_activations(dataloaders['train']['21067-10-18'])
+    return
+
+
 
     # ys = []
     # for batch in tqdm(dataloaders['train']['21067-10-18']):

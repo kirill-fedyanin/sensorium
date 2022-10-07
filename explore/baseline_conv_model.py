@@ -57,7 +57,7 @@ class FiringRateEncoder(nn.Module):
         global_i += 1
         print(global_i)
 
-        if global_i % 100 == 0:
+        if global_i % 20 == 0:
             import ipdb; ipdb.set_trace()
 
         x = self.core(inputs)
@@ -228,7 +228,6 @@ def stacked_core_full_gauss_readout(
 
 
 def init_model(dataloaders, seed=42):
-
     model_config = {
         'pad_input': False,
         'layers': 4,
