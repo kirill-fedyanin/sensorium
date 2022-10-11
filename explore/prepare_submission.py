@@ -17,7 +17,7 @@ def parse_args():
 def main():
     args = parse_args()
     dataset_name = '26872-17-20'
-    dataloaders = init_loaders(args.data_path)
+    dataloaders = init_loaders(args.data_path, scale=0.25)
     model = init_model(args.model, args.checkpoint_path, dataloaders)
 
     save_directory = f"./submission_files/{args.model}"

@@ -8,7 +8,7 @@ def init_model(model_name, checkpoint_path, dataloaders):
     if model_name == 'generalization':
         model = sota(dataloaders, checkpoint_path)
     elif model_name == 'ensemble':
-        checkpoints = [f'{checkpoint_path}_{n}.pth' for n in range(41, 51)]
+        checkpoints = [f'{checkpoint_path}_{n}.pth' for n in range(41, 61)]
         model = SotaEnsemble(dataloaders, checkpoints).cuda()
     else:
         raise ValueError(f'Unknown model {model_name}')
@@ -30,7 +30,6 @@ class SotaEnsemble(nn.Module):
         return torch.mean(torch.stack([
             model(*args, **kwargs) for model in self.models
         ]), dim=0)
-
 
 
 def sota(dataloaders, checkpoint_path):

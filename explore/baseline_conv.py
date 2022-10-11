@@ -1,12 +1,9 @@
-"""
-What is the question
-how exactly are the sampled?
-are nearby similar?
-"""
+
 import os
 from argparse import ArgumentParser
 
 import torch
+from torch import nn
 import numpy as np
 import pandas as pd
 
@@ -18,6 +15,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 from nnfabrik.builder import get_data, get_model, get_trainer
+from neuralpredictors.measures.np_functions import corr, fev
+
 from sensorium.training import standard_trainer
 from explore.baseline_conv_model import init_model
 
@@ -43,25 +42,6 @@ def init_loaders(basepath, single=False, **kwargs):
     return dataloaders
 
 
-def plt_activations(dataloader):
-    batch = next(iter(dataloader))
-
-    positions = dataloader.dataset.neurons.cell_motor_coordinates
-    print(positions.shape)
-    # print(np.std(positions[:, 2]))
-
-    for i, r in enumerate(batch.responses):
-        r = r.cpu().numpy()
-        if i == 20:
-            break
-        plt.figure(figsize=(10, 8))
-        plt.scatter(positions[:, 0], positions[:, 1], c=r, s=20, alpha=0.3, cmap='Reds')
-        # plt.legend()
-        plt.colorbar()
-        plt.show()
-
-
-
 def main():
     print('started')
     parser = ArgumentParser()
@@ -74,25 +54,14 @@ def main():
         basepath, single=True, scale=0.25
     )
 
-    plt_activations(dataloaders['train']['21067-10-18'])
-    return
-
-
-
-    # ys = []
-    # for batch in tqdm(dataloaders['train']['21067-10-18']):
-    #     ys.append(batch.responses)
-    #     pass
-    # ys = torch.cat(ys).cpu().detach().numpy()
-    # return
-
     model = init_model(dataloaders, seed=seed).cuda()
+
 
     validation_score, trainer_output, state_dict = standard_trainer(
         model,
         dataloaders,
         seed=seed,
-        max_iter=10,
+        max_iter=200,
         verbose=True,
         lr_decay_steps=4,
         avg_loss=False,
@@ -101,7 +70,6 @@ def main():
         track_training=True,
     )
 
-    # trainer(model, dataloaders, seed=seed)
     print(validation_score)
     print(trainer_output)
     torch.save(model.state_dict(), f'model_checkpoints/smoll_generalization_model_{seed}.pth')
