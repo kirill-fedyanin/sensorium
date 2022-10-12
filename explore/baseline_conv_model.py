@@ -53,13 +53,6 @@ class FiringRateEncoder(nn.Module):
         detach_core=False,
         **kwargs
     ):
-        global global_i
-        global_i += 1
-        # print(global_i)
-
-        # if global_i % 20 == 0:
-        #     import ipdb; ipdb.set_trace()
-
         x = self.core(inputs)
         if detach_core:
             x = x.detach()

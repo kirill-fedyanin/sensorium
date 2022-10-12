@@ -1,3 +1,7 @@
+"""
+Lvl 2
+Add a augmentation?
+"""
 
 import os
 from argparse import ArgumentParser
@@ -30,7 +34,7 @@ def init_loaders(basepath, single=False, **kwargs):
     dataset_fn = 'sensorium.datasets.static_loaders'
     dataset_config = {
         'paths': filenames,
-        'normalize': True,
+        'normalize': False,
         'include_behavior': False,
         'include_eye_position': False,
         'batch_size': 128,
@@ -54,14 +58,18 @@ def main():
         basepath, single=True, scale=0.25
     )
 
-    model = init_model(dataloaders, seed=seed).cuda()
+    loader = dataloaders['train']['21067-10-18']
+    batch = next(iter(loader))
+    # print(batch.responses.max())
 
+    model = init_model(dataloaders, seed=seed).cuda()
+    print(model)
 
     validation_score, trainer_output, state_dict = standard_trainer(
         model,
         dataloaders,
         seed=seed,
-        max_iter=200,
+        max_iter=4,
         verbose=True,
         lr_decay_steps=4,
         avg_loss=False,
