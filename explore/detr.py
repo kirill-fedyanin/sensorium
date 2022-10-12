@@ -11,13 +11,20 @@ import torchvision.transforms as T
 
 
 class SensorDEMO(nn.Module):
-    def __init__(self, num_classes, hidden_dim=256, nheads=8,
-                 num_encoder_layers=6, num_decoder_layers=6):
+    def __init__(
+            self, hidden_dim=256, nheads=8,
+            num_encoder_layers=6, num_decoder_layers=6, num_neurons=8372,
+            last_hidden_dim=8, backbone=None, data_key=None
+        ):
         super().__init__()
+        self.data_key = data_key
 
         # create ResNet-50 backbone
-        self.backbone = resnet50()
-        self.backbone.fc = nn.Sequential()
+        if backbone is None:
+            self.backbone = resnet50()
+            self.backbone.fc = nn.Sequential()
+        else:
+            self.backbone = backbone
 
         # create conversion layer
         self.conv = nn.Conv2d(2048, hidden_dim, 1)
@@ -26,20 +33,33 @@ class SensorDEMO(nn.Module):
         self.transformer = nn.Transformer(
             hidden_dim, nheads, num_encoder_layers, num_decoder_layers)
 
-        # prediction heads, one extra class for predicting non-empty slots
-        # note that in baseline DETR linear_bbox layer is 3-layer MLP
-        self.linear_class = nn.Linear(hidden_dim, num_classes + 1)
-        self.linear_bbox = nn.Linear(hidden_dim, 4)
-
         # output positional encodings (object queries)
-        self.query_pos = nn.Parameter(torch.rand(100, hidden_dim))
+        self.query_pos = nn.Parameter(torch.rand(num_neurons, hidden_dim))
 
         # spatial positional encodings
         # note that in baseline DETR we use sine positional encodings
-        self.row_embed = nn.Parameter(torch.rand(50, hidden_dim // 2))
-        self.col_embed = nn.Parameter(torch.rand(50, hidden_dim // 2))
+        self.row_embed = nn.Parameter(torch.rand(60, 32))
+        self.col_embed = nn.Parameter(torch.rand(60, 32))
 
-    def forward(self, inputs):
+        self.linear = nn.Linear(64, 1)
+
+    def forward(
+            self,
+            inputs,
+            *args,
+            targets=None,
+            data_key=None,
+            behavior=None,
+            pupil_center=None,
+            trial_idx=None,
+            shift=None,
+            detach_core=False,
+            **kwargs
+    ):
+        """
+        data_key just to follow sensorium trainer
+        """
+        # import ipdb; ipdb.set_trace()
         h = self.backbone(inputs)
 
         # construct positional encodings
@@ -50,9 +70,9 @@ class SensorDEMO(nn.Module):
         ], dim=-1).flatten(0, 1).unsqueeze(1)
 
         # propagate through the transformer
-        h = self.transformer(pos + 0.1 * h.flatten(2).permute(2, 0, 1),
-                             self.query_pos.unsqueeze(1)).transpose(0, 1)
-
-        # finally project transformer outputs to class labels and bounding boxes
-        return {'pred_logits': self.linear_class(h),
-                'pred_boxes': self.linear_bbox(h).sigmoid()}
+        batch_size = h.shape[0]
+        h = self.transformer(
+            pos + 0.1 * h.flatten(2).permute(2, 0, 1), self.query_pos.unsqueeze(1).repeat(1, batch_size, 1)
+        ).transpose(0, 1)
+        h = self.linear(h).squeeze(-1)
+        return h

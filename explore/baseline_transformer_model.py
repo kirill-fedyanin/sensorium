@@ -1,10 +1,3 @@
-"""
-1.25 ~ 0.18
-1 ~ 0.17
-0.1 ~ 0.14
-10/0.1 ~ 19
-with small number neurons there is no speed up, but also the convergence is missing
-"""
 from nnfabrik.utility.nn_helpers import set_random_seed, get_dims_for_loader_dict
 from neuralpredictors.utils import get_module_output
 # from neuralpredictors.layers.encoders import FiringRateEncoder
@@ -18,6 +11,7 @@ from torch import nn
 
 from sensorium.models.readouts import MultipleFullGaussian2d
 from sensorium.models.utility import prepare_grid
+from explore.detr import SensorDEMO
 
 
 class FiringRateEncoder(nn.Module):
@@ -189,34 +183,15 @@ def stacked_core_full_gauss_readout(
         use_avg_reg=use_avg_reg,
     )
 
-
-    in_shapes_dict = {
-        k: get_module_output(core, v[in_name])[1:]
-        for k, v in session_shape_dict.items()
-    }
-
-    readout = MultipleFullGaussian2d(
-        in_shape_dict=in_shapes_dict,
-        loader=dataloaders,
-        n_neurons_dict=n_neurons_dict,
-        init_mu_range=init_mu_range,
-        bias=readout_bias,
-        init_sigma=init_sigma,
-        gamma_readout=gamma_readout,
-        gauss_type=gauss_type,
-        grid_mean_predictor=grid_mean_predictor,
-        grid_mean_predictor_type=grid_mean_predictor_type,
-        source_grids=source_grids,
-    )
-
-    model = FiringRateEncoder(
-        core=core,
-        readout=readout,
-        shifter=shifter,
-        elu_offset=elu_offset,
+    model = SensorDEMO(
+        hidden_dim=64, nheads=4,
+        num_encoder_layers=2, num_decoder_layers=2, num_neurons=8372,
+        last_hidden_dim=8, backbone=core
     )
 
     return model
+
+
 
 
 def init_model(dataloaders, seed=42):
@@ -246,37 +221,6 @@ def init_model(dataloaders, seed=42):
     model = stacked_core_full_gauss_readout(dataloaders, seed=seed, **model_config)
 
     return model
-
-
-
-
-# def init_model(dataloaders):
-#     model_fn = 'sensorium.models.stacked_core_full_gauss_readout'
-#     model_config = {'pad_input': False,
-#                     'layers': 4,
-#                     'input_kern': 9,
-#                     'gamma_input': 6.3831,
-#                     'gamma_readout': 0.0076,
-#                     'hidden_kern': 7,
-#                     'hidden_channels': 64,
-#                     'depth_separable': True,
-#                     'grid_mean_predictor': {'type': 'cortex',
-#                                             'input_dimensions': 2,
-#                                             'hidden_layers': 1,
-#                                             'hidden_features': 30,
-#                                             'final_tanh': True},
-#                     'init_sigma': 0.1,
-#                     'init_mu_range': 0.3,
-#                     'gauss_type': 'full',
-#                     'shifter': False,
-#                     'stack': -1,
-#                     }
-#
-#     model = get_model(model_fn=model_fn,
-#                       model_config=model_config,
-#                       dataloaders=dataloaders,
-#                       seed=42, )
-#     return model
 
 
 

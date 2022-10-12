@@ -81,9 +81,10 @@ def standard_trainer(
             if scale_loss
             else 1.0
         )
-        regularizers = int(
-            not detach_core
-        ) * model.core.regularizer() + model.readout.regularizer(data_key)
+        # regularizers = int(
+        #     not detach_core
+        # ) * model.core.regularizer() + model.readout.regularizer(data_key)
+        regularizers = 0
         return (
             loss_scale
             * criterion(
