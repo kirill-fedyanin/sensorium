@@ -38,8 +38,6 @@ def main():
     train_loader, val_loader, _, _ = get_loader(data_file)
 
     batch = next(iter(train_loader))
-    import ipdb; ipdb.set_trace()
-    return
 
     for i in range(3):
         image = batch.images[i].cpu().numpy()[0]

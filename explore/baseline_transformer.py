@@ -1,6 +1,3 @@
-"""
-
-"""
 import os
 from argparse import ArgumentParser
 
@@ -21,6 +18,8 @@ from neuralpredictors.measures.np_functions import corr, fev
 
 from sensorium.training import standard_trainer
 from explore.baseline_transformer_model import init_model
+
+from neuralpredictors.measures.modules import PoissonLoss
 
 
 def init_loaders(basepath, single=False, **kwargs):
@@ -43,34 +42,63 @@ def init_loaders(basepath, single=False, **kwargs):
     return dataloaders
 
 
+def train(model, dataloaders, mouse_id):
+    pass
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.009)
+    criterion = PoissonLoss()
+
+    for epoch in range(5):
+        losses = []
+        for batch in tqdm(dataloaders['train'][mouse_id]):
+            model(batch.images)
+            # optimizer.zero_grad()
+            # pred = model(batch.images)
+            # loss = criterion(pred, batch.responses)
+            # loss.backward()
+            # optimizer.step()
+            # losses.append(loss.item())
+        print(np.mean(losses))
+
+
+
 def main():
     print('started')
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--debug', default=False, action='store_true')
 
     args = parser.parse_args()
     seed = args.seed
     basepath = "./notebooks/data/"
-    dataloaders = init_loaders(
-        basepath, single=True, scale=0.25, batch_size=6
-    )
+    if args.debug:
+        dataloaders = init_loaders(
+            basepath, single=True, scale=0.25, batch_size=4, image_n=100
+        )
+        max_iter = 5
+    else:
+        dataloaders = init_loaders(
+            basepath, single=True, scale=0.1, batch_size=16
+        )
+        max_iter = 200
 
     mouse_id = '21067-10-18'
     loader = dataloaders['train'][mouse_id]
     batch = next(iter(loader))
     model = init_model(dataloaders, seed=seed).cuda()
 
+    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('number of params:', n_parameters)
+
     validation_score, trainer_output, state_dict = standard_trainer(
         model,
         dataloaders,
         seed=seed,
-        max_iter=200,
+        max_iter=max_iter,
         verbose=True,
         lr_decay_steps=4,
         avg_loss=False,
-        # lr_init=0.009,
         lr_init=0.009,
-        track_training=True,
+        track_training=(not args.debug),
     )
 
     print(validation_score)

@@ -213,7 +213,6 @@ def main():
         print(validation_score)
         print(trainer_output)
         torch.save(model.state_dict(), model_path)
-    import ipdb; ipdb.set_trace()
     tune_activations(dataloaders['train'][mouse_id], model)
 
 

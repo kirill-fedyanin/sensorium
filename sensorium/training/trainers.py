@@ -75,7 +75,6 @@ def standard_trainer(
     """
 
     def full_objective(model, dataloader, data_key, *args, **kwargs):
-
         loss_scale = (
             np.sqrt(len(dataloader[data_key].dataset) / args[0].shape[0])
             if scale_loss
@@ -84,7 +83,6 @@ def standard_trainer(
         regularizers = int(
             not detach_core
         ) * model.core.regularizer() + model.readout.regularizer(data_key)
-        # regularizers = 0
         return (
             loss_scale
             * criterion(
@@ -182,12 +180,12 @@ def standard_trainer(
 
         # train over batches
         optimizer.zero_grad()
+        losses = []
         for batch_no, (data_key, data) in tqdm(
             enumerate(LongCycler(dataloaders["train"])),
             total=n_iterations,
             desc="Epoch {}".format(epoch),
         ):
-
             batch_args = list(data)
             batch_kwargs = data._asdict() if not isinstance(data, dict) else data
             loss = full_objective(
@@ -198,10 +196,12 @@ def standard_trainer(
                 **batch_kwargs,
                 detach_core=detach_core
             )
+            losses.append(loss.item())
             loss.backward()
             if (batch_no + 1) % optim_step_count == 0:
                 optimizer.step()
                 optimizer.zero_grad()
+        print('Train loss', np.mean(losses))
 
     ##### Model evaluation ####################################################################################################
     model.eval()

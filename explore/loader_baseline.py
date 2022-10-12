@@ -26,7 +26,6 @@ def get_tensor(base_dir, tier='train'):
     images = np.array([
         np.load(image_dir / name) for name in os.listdir(image_dir)
     ])
-    import ipdb; ipdb.set_trace()
     images = images[tiers == tier]
     print(len(images))
     tester = {}

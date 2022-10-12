@@ -111,8 +111,8 @@ def core_transformer(
     )
 
     model = SensorDEMO(
-        hidden_dim=64, nheads=4,
-        num_encoder_layers=2, num_decoder_layers=2, num_neurons=8372,
+        hidden_dim=64, nheads=1,
+        num_encoder_layers=1, num_decoder_layers=2, num_neurons=8372,
         core=core
     )
 
