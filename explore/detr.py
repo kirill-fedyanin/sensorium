@@ -10,28 +10,25 @@ import torchvision.transforms as T
 # torch.set_grad_enabled(False)
 
 
+class FakeReadout:
+    def regularizer(self, data_key=None):
+        return 0
+
+
 class SensorDEMO(nn.Module):
     def __init__(
             self, hidden_dim=256, nheads=8,
             num_encoder_layers=6, num_decoder_layers=6, num_neurons=8372,
-            last_hidden_dim=8, backbone=None, data_key=None
+            core=None, data_key=None
         ):
         super().__init__()
         self.data_key = data_key
-
-        # create ResNet-50 backbone
-        if backbone is None:
-            self.backbone = resnet50()
-            self.backbone.fc = nn.Sequential()
-        else:
-            self.backbone = backbone
-
-        # create conversion layer
-        self.conv = nn.Conv2d(2048, hidden_dim, 1)
+        self.core = core
 
         # create a default PyTorch transformer
         self.transformer = nn.Transformer(
-            hidden_dim, nheads, num_encoder_layers, num_decoder_layers)
+            hidden_dim, nheads, num_encoder_layers, num_decoder_layers
+        )
 
         # output positional encodings (object queries)
         self.query_pos = nn.Parameter(torch.rand(num_neurons, hidden_dim))
@@ -42,6 +39,11 @@ class SensorDEMO(nn.Module):
         self.col_embed = nn.Parameter(torch.rand(60, 32))
 
         self.linear = nn.Linear(64, 1)
+        self.readout = FakeReadout()
+
+    def regularizer(self, data_key=None):
+        print('Sens reg?')
+        return 0
 
     def forward(
             self,
@@ -60,7 +62,7 @@ class SensorDEMO(nn.Module):
         data_key just to follow sensorium trainer
         """
         # import ipdb; ipdb.set_trace()
-        h = self.backbone(inputs)
+        h = self.core(inputs)
 
         # construct positional encodings
         H, W = h.shape[-2:]

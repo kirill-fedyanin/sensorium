@@ -1,3 +1,6 @@
+"""
+
+"""
 import os
 from argparse import ArgumentParser
 
@@ -49,7 +52,7 @@ def main():
     seed = args.seed
     basepath = "./notebooks/data/"
     dataloaders = init_loaders(
-        basepath, single=True, scale=0.25, batch_size=4
+        basepath, single=True, scale=0.25, batch_size=6
     )
 
     mouse_id = '21067-10-18'
