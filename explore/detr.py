@@ -18,6 +18,42 @@ class FakeReadout:
         return self.base_model.regularizer(data_key)
 
 
+class SensorDEMOdebug(nn.Module):
+    def __init__(
+            self, hidden_dim=256, nheads=8,
+            num_encoder_layers=6, num_decoder_layers=6, num_neurons=8372,
+            core=None, data_key=None
+        ):
+        super().__init__()
+        self.data_key = data_key
+        self.core = core
+        self.linear = nn.Linear(6912, num_neurons)
+        self.readout = FakeReadout(base_model=self)
+
+    def regularizer(self, data_key=None):
+        return 0
+
+    def forward(
+            self,
+            inputs,
+            *args,
+            targets=None,
+            data_key=None,
+            behavior=None,
+            pupil_center=None,
+            trial_idx=None,
+            shift=None,
+            detach_core=False,
+            **kwargs
+    ):
+        """
+        data_key just to follow sensorium trainer
+        """
+        h = self.core(inputs)
+        h = h.view(h.shape[0], -1)
+        return self.linear(h)
+
+
 class SensorDEMO(nn.Module):
     def __init__(
             self, hidden_dim=256, nheads=8,
@@ -84,4 +120,3 @@ class SensorDEMO(nn.Module):
         h = self.norm(h)
         h = self.linear(h).squeeze(-1)
         return nn.functional.elu(h) + 1
-        return h

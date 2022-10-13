@@ -11,7 +11,7 @@ from torch import nn
 
 from sensorium.models.readouts import MultipleFullGaussian2d
 from sensorium.models.utility import prepare_grid
-from explore.detr import SensorDEMO
+from explore.detr import SensorDEMO, SensorDEMOdebug
 
 
 def core_transformer(
@@ -85,6 +85,7 @@ def core_transformer(
 
     set_random_seed(seed)
     grid_mean_predictor, grid_mean_predictor_type, source_grids = prepare_grid(grid_mean_predictor, dataloaders)
+    batch_norm = False
 
     core = Stacked2dCore(
         input_channels=core_input_channels,
@@ -110,9 +111,13 @@ def core_transformer(
         use_avg_reg=use_avg_reg,
     )
 
-    model = SensorDEMO(
-        hidden_dim=64, nheads=1,
-        num_encoder_layers=1, num_decoder_layers=2, num_neurons=8372,
+    num_neurons = 10
+    # num_neurons = 8372
+
+    # TODO
+    model = SensorDEMOdebug(
+        hidden_dim=64, nheads=4,
+        num_encoder_layers=2, num_decoder_layers=2, num_neurons=num_neurons,
         core=core
     )
 

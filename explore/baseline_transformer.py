@@ -1,3 +1,9 @@
+"""
+batch norm
+regularizers
+early stop on val
+
+"""
 import os
 from argparse import ArgumentParser
 
@@ -60,7 +66,6 @@ def train(model, dataloaders, mouse_id):
         print(np.mean(losses))
 
 
-
 def main():
     print('started')
     parser = ArgumentParser()
@@ -72,12 +77,12 @@ def main():
     basepath = "./notebooks/data/"
     if args.debug:
         dataloaders = init_loaders(
-            basepath, single=True, scale=0.25, batch_size=4, image_n=100
+            basepath, single=True, scale=0.1, batch_size=4, image_n=8, neuron_n=1
         )
-        max_iter = 5
+        max_iter = 200
     else:
         dataloaders = init_loaders(
-            basepath, single=True, scale=0.1, batch_size=16
+            basepath, single=True, scale=0.25, batch_size=4
         )
         max_iter = 200
 

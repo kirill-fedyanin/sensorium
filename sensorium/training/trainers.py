@@ -10,9 +10,39 @@ from neuralpredictors.training import (
     LongCycler,
 )
 from nnfabrik.utility.nn_helpers import set_random_seed
+from torch import nn
 
 from ..utility import scores
 from ..utility.scores import get_correlations, get_poisson_loss
+
+
+class PoissonLoss(nn.Module):
+    def __init__(self, bias=1e-12, per_neuron=False, avg=True):
+        """
+        Computes Poisson loss between the output and target. Loss is evaluated by computing log likelihood
+        (up to a constant offset dependent on the target) that
+        output prescribes the mean of the Poisson distribution and target is a sample from the distribution.
+
+        Args:
+            bias (float, optional): Value used to numerically stabilize evalution of the log-likelihood. This value is effecitvely added to the output during evaluation. Defaults to 1e-12.
+            per_neuron (bool, optional): If set to True, the average/total Poisson loss is returned for each entry of the last dimension (assumed to be enumeration neurons) separately. Defaults to False.
+            avg (bool, optional): If set to True, return mean loss. Otherwise returns the sum of loss. Defaults to True.
+        """
+        super().__init__()
+        self.bias = bias
+        self.per_neuron = per_neuron
+        self.avg = avg
+
+    def forward(self, output, target):
+        target = target.detach()
+        loss = output - target * torch.log(output + self.bias)
+        if not self.per_neuron:
+            return loss.mean() if self.avg else loss.sum()
+        else:
+            loss = loss.view(-1, loss.shape[-1])
+            return loss.mean(dim=0) if self.avg else loss.sum(dim=0)
+
+
 
 
 def standard_trainer(
@@ -80,9 +110,10 @@ def standard_trainer(
             if scale_loss
             else 1.0
         )
-        regularizers = int(
-            not detach_core
-        ) * model.core.regularizer() + model.readout.regularizer(data_key)
+        # regularizers = int(
+        #     not detach_core
+        # ) * model.core.regularizer() + model.readout.regularizer(data_key)
+        regularizers = 0
         return (
             loss_scale
             * criterion(
@@ -97,15 +128,27 @@ def standard_trainer(
     set_random_seed(seed)
     model.train()
 
-    criterion = getattr(modules, loss_function)(avg=avg_loss)
+    # criterion = getattr(modules, loss_function)(avg=avg_loss)
+    # criterion = PoissonLoss(avg=avg_loss)
+    criterion = nn.MSELoss()
 
+    # TODO
+        # stop_closure = partial(
+    #     getattr(scores, stop_function),
+    #     dataloaders=dataloaders["validation"],
+    #     device=device,
+    #     per_neuron=False,
+    #     avg=True,
+    # )
     stop_closure = partial(
         getattr(scores, stop_function),
-        dataloaders=dataloaders["validation"],
+        dataloaders=dataloaders["train"],
         device=device,
         per_neuron=False,
         avg=True,
     )
+
+
 
     n_iterations = len(LongCycler(dataloaders["train"]))
 
