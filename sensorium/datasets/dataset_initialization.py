@@ -11,8 +11,6 @@ def init_loaders(basepath, **kwargs):
     dataset_config = {
         'paths': filenames,
         'normalize': True,
-        'include_behavior': False,
-        'include_eye_position': False,
         'batch_size': 128,
     }
 

@@ -14,7 +14,7 @@ from nnfabrik.builder import get_data, get_model, get_trainer
 import os
 
 
-def init_model(dataloaders):
+def init_model(dataloaders, shifter=False):
     model_fn = 'sensorium.models.stacked_core_full_gauss_readout'
     model_config = {
         'pad_input': False,
@@ -35,7 +35,7 @@ def init_model(dataloaders):
         'init_sigma': 0.1,
         'init_mu_range': 0.3,
         'gauss_type': 'full',
-        'shifter': False,
+        'shifter': shifter,
         'stack': -1,
     }
 
@@ -50,18 +50,18 @@ def main():
     print('started')
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument(
-        '--loss', type=str, default='PoissonLoss',
-        choices=['ExponentialLoss', 'PoissonLoss', 'AnscombeMSE']
-    )
     parser.add_argument('--note', type=str, default='', help='Checkpoint name modification')
+    parser.add_argument('--plus', default=False, action='store_true')
     args = parser.parse_args()
+
     seed = args.seed
     basepath = "./notebooks/data/"
     dataloaders = init_loaders(
-        basepath, scale=0.25
+        basepath, scale=0.25, include_behavior=args.plus, include_eye_position=args.plus
     )
-    model = init_model(dataloaders).cuda()
+
+
+    model = init_model(dataloaders, shifter=args.plus).cuda()
 
     trainer_fn = "sensorium.training.standard_trainer"
 
@@ -72,7 +72,6 @@ def main():
         'lr_init': 0.009,
         'track_training': True,
         'verbose': True,
-        'loss_function': args.loss
     }
 
     print('Start training')

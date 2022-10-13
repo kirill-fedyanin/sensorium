@@ -127,9 +127,7 @@ def standard_trainer(
     set_random_seed(seed)
     model.train()
 
-    # criterion = getattr(modules, loss_function)(avg=avg_loss)
-    # criterion = PoissonLoss(avg=avg_loss)
-    criterion = nn.MSELoss()
+    criterion = getattr(modules, loss_function)(avg=avg_loss)
 
     stop_closure = partial(
         getattr(scores, stop_function),
@@ -138,9 +136,6 @@ def standard_trainer(
         per_neuron=False,
         avg=True,
     )
-
-
-
 
     n_iterations = len(LongCycler(dataloaders["train"]))
 
