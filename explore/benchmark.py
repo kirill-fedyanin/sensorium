@@ -1,3 +1,7 @@
+"""
+Lvl 4
+benchmark plus
+"""
 import matplotlib.pyplot as plt
 import seaborn as sns
 from argparse import ArgumentParser
@@ -12,6 +16,7 @@ from sensorium.utility.measure_helpers import get_df_for_scores
 from sensorium.models.model_initialization import sota, SotaEnsemble
 from sensorium.datasets.dataset_initialization import init_loaders
 from sensorium.models.model_initialization import init_model
+from sensorium.utility import submission
 
 
 def benchmark(dataloaders, model, tier='validation', show_feves=False):
@@ -53,17 +58,34 @@ def main():
     parser.add_argument("--model", type=str, default='generalization')
     parser.add_argument("--checkpoint_path", type=str, default='model_checkpoints/generalization_model.pth')
     parser.add_argument("--show_feves", default=False, action='store_true')
-    parser.add_argument("--scaled_input", default=False, action='store_true')
+    parser.add_argument('--plus', default=False, action='store_true')
+    parser.add_argument('--submission', default=False, action='store_true')
+    parser.add_argument('--note', default='', type=str)
     args = parser.parse_args()
 
-    if args.scaled_input:
-        dataloaders = init_loaders(args.data_path, scale=0.25)
-    else:
-        dataloaders = init_loaders(args.data_path)
+
+    basepath = "./notebooks/data/"
+    dataloaders = init_loaders(
+        basepath, scale=0.25, include_behavior=args.plus, include_eye_position=args.plus
+    )
 
     model = init_model(args.model, args.checkpoint_path, dataloaders)
 
     benchmark(dataloaders, model, tier='test', show_feves=args.show_feves)
+
+    if submission:
+        save_directory = f"./submission_files/{args.model}{args.note}"
+        if not os.path.exists(save_directory):
+            os.makedirs(save_directory)
+        # generate the submission file
+        dataset_name = '26872-17-20'  # the test one?
+        submission.generate_submission_file(
+            trained_model=model,
+            dataloaders=dataloaders,
+            data_key=dataset_name,
+            path=save_directory,
+            device="cuda"
+        )
 
 
 if __name__ == '__main__':
