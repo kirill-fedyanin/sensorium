@@ -34,7 +34,6 @@ def core_transformer(
     stack=None,
     depth_separable=False,
     linear=False,
-    grid_mean_predictor=None,
     attention_conv=False,
     hidden_padding=None,
     core_bias=False,
@@ -84,8 +83,8 @@ def core_transformer(
     )
 
     set_random_seed(seed)
-    grid_mean_predictor, grid_mean_predictor_type, source_grids = prepare_grid(grid_mean_predictor, dataloaders)
-    batch_norm = False
+    # grid_mean_predictor, grid_mean_predictor_type, source_grids = prepare_grid(grid_mean_predictor, dataloaders)
+    # batch_norm = False
 
     core = Stacked2dCore(
         input_channels=core_input_channels,
@@ -111,10 +110,9 @@ def core_transformer(
         use_avg_reg=use_avg_reg,
     )
 
-    num_neurons = 10
-    # num_neurons = 8372
+    # num_neurons = 10
+    num_neurons = 8372
 
-    # TODO
     model = SensorDEMOdebug(
         hidden_dim=64, nheads=4,
         num_encoder_layers=2, num_decoder_layers=2, num_neurons=num_neurons,

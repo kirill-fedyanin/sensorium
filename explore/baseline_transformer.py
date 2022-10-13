@@ -1,9 +1,3 @@
-"""
-batch norm
-regularizers
-early stop on val
-
-"""
 import os
 from argparse import ArgumentParser
 

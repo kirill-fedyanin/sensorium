@@ -110,10 +110,9 @@ def standard_trainer(
             if scale_loss
             else 1.0
         )
-        # regularizers = int(
-        #     not detach_core
-        # ) * model.core.regularizer() + model.readout.regularizer(data_key)
-        regularizers = 0
+        regularizers = int(
+            not detach_core
+        ) * model.core.regularizer() + model.readout.regularizer(data_key)
         return (
             loss_scale
             * criterion(
@@ -132,21 +131,14 @@ def standard_trainer(
     # criterion = PoissonLoss(avg=avg_loss)
     criterion = nn.MSELoss()
 
-    # TODO
-        # stop_closure = partial(
-    #     getattr(scores, stop_function),
-    #     dataloaders=dataloaders["validation"],
-    #     device=device,
-    #     per_neuron=False,
-    #     avg=True,
-    # )
     stop_closure = partial(
         getattr(scores, stop_function),
-        dataloaders=dataloaders["train"],
+        dataloaders=dataloaders["validation"],
         device=device,
         per_neuron=False,
         avg=True,
     )
+
 
 
 
