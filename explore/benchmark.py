@@ -1,5 +1,5 @@
 """
-Lvl 4
+Lvl 1
 benchmark plus
 """
 import matplotlib.pyplot as plt
@@ -63,22 +63,23 @@ def main():
     parser.add_argument('--note', default='', type=str)
     args = parser.parse_args()
 
-
     basepath = "./notebooks/data/"
     dataloaders = init_loaders(
         basepath, scale=0.25, include_behavior=args.plus, include_eye_position=args.plus
     )
 
-    model = init_model(args.model, args.checkpoint_path, dataloaders)
-
-    benchmark(dataloaders, model, tier='test', show_feves=args.show_feves)
+    model = init_model(args.model, args.checkpoint_path, dataloaders, shifter=args.plus)
+    benchmark(dataloaders, model, tier='validation', show_feves=args.show_feves)
 
     if submission:
         save_directory = f"./submission_files/{args.model}{args.note}"
         if not os.path.exists(save_directory):
             os.makedirs(save_directory)
         # generate the submission file
-        dataset_name = '26872-17-20'  # the test one?
+        if args.plus:
+            dataset_name = '27204-5-13'
+        else:
+            dataset_name = '26872-17-20'  # the test one?
         submission.generate_submission_file(
             trained_model=model,
             dataloaders=dataloaders,

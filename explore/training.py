@@ -50,6 +50,7 @@ def main():
     print('started')
     parser = ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--max_iter', type=int, default=200)
     parser.add_argument('--note', type=str, default='', help='Checkpoint name modification')
     parser.add_argument('--plus', default=False, action='store_true')
     args = parser.parse_args()
@@ -66,7 +67,7 @@ def main():
     trainer_fn = "sensorium.training.standard_trainer"
 
     trainer_config = {
-        'max_iter': 200,
+        'max_iter': args.max_iter,
         'lr_decay_steps': 4,
         'avg_loss': False,
         'lr_init': 0.009,

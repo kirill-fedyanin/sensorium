@@ -3,12 +3,11 @@ from torch import nn
 from nnfabrik.builder import get_model
 
 
-
 def init_model(model_name, checkpoint_path, dataloaders, shifter=False):
     if model_name == 'generalization':
         model = sota(dataloaders, checkpoint_path, shifter=shifter)
     elif model_name == 'ensemble':
-        checkpoints = [f'{checkpoint_path}_{n}.pth' for n in range(41, 61)]
+        checkpoints = [f'{checkpoint_path}{n}.pth' for n in range(41, 61)]
         model = SotaEnsemble(dataloaders, checkpoints, shifter=shifter).cuda()
     else:
         raise ValueError(f'Unknown model {model_name}')
