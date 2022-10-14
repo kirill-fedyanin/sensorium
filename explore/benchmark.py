@@ -1,7 +1,3 @@
-"""
-Lvl 1
-benchmark plus
-"""
 import matplotlib.pyplot as plt
 import seaborn as sns
 from argparse import ArgumentParser
