@@ -2,6 +2,7 @@ from functools import partial
 import numpy as np
 import torch
 from tqdm import tqdm
+import wandb
 
 from neuralpredictors.measures import modules
 from neuralpredictors.training import (
@@ -11,6 +12,7 @@ from neuralpredictors.training import (
 )
 from nnfabrik.utility.nn_helpers import set_random_seed
 from torch import nn
+
 
 from ..utility import scores
 from ..utility.scores import get_correlations, get_poisson_loss
@@ -103,7 +105,6 @@ def standard_trainer(
     Returns:
 
     """
-
     def full_objective(model, dataloader, data_key, *args, **kwargs):
         loss_scale = (
             np.sqrt(len(dataloader[data_key].dataset) / args[0].shape[0])
@@ -176,6 +177,11 @@ def standard_trainer(
                 avg=False,
             ),
         )
+        wandb.log({
+            'val/correlation': get_correlations(model, dataloaders['validation'], device='cuda').mean(),
+            'val/loss': get_poisson_loss(model, dataloaders['validation'],  device='cuda').sum()
+        })
+
         if hasattr(model, "tracked_values"):
             tracker_dict.update(model.tracked_values)
         tracker = MultipleObjectiveTracker(**tracker_dict)
@@ -232,6 +238,7 @@ def standard_trainer(
                 optimizer.step()
                 optimizer.zero_grad()
         print('Train loss', np.mean(losses))
+        wandb.log({'train_loss': np.mean(losses)})
 
     ##### Model evaluation ####################################################################################################
     model.eval()

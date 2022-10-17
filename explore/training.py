@@ -58,9 +58,8 @@ def main():
     seed = args.seed
     basepath = "./notebooks/data/"
     dataloaders = init_loaders(
-        basepath, scale=0.25, include_behavior=args.plus, include_eye_position=args.plus
+        basepath, scale=0.25, include_behavior=args.plus, include_eye_position=args.plus,
     )
-
 
     model = init_model(dataloaders, shifter=args.plus).cuda()
 

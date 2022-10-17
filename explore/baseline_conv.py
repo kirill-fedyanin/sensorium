@@ -1,6 +1,6 @@
 """
-Lvl 2
-Add a augmentation?
+Lvl 10
+extra
 """
 
 import os
@@ -14,6 +14,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
+import wandb
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -34,7 +35,7 @@ def init_loaders(basepath, single=False, **kwargs):
     dataset_fn = 'sensorium.datasets.static_loaders'
     dataset_config = {
         'paths': filenames,
-        'normalize': False,
+        'normalize': True,
         'include_behavior': False,
         'include_eye_position': False,
         'batch_size': 128,
@@ -60,20 +61,23 @@ def main():
 
     loader = dataloaders['train']['21067-10-18']
     batch = next(iter(loader))
-    # print(batch.responses.max())
-
+    print(batch.images.shape)
     model = init_model(dataloaders, seed=seed).cuda()
-    print(model)
+
+    wandb.init(project="sensorium", entity="kirill-fedyanin")
+    wandb.config = {
+        'label': 'bad'
+    }
+    wandb.watch(model)
 
     validation_score, trainer_output, state_dict = standard_trainer(
         model,
         dataloaders,
         seed=seed,
-        max_iter=4,
+        max_iter=10,
         verbose=True,
         lr_decay_steps=4,
         avg_loss=False,
-        # lr_init=0.009,
         lr_init=0.009,
         track_training=True,
     )
