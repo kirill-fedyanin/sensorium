@@ -1,18 +1,23 @@
-from torch import nn
-
+"""
+1.25 ~ 0.18
+1 ~ 0.17
+0.1 ~ 0.14
+10/0.1 ~ 19
+with small number neurons there is no speed up, but also the convergence is missing
+"""
 from nnfabrik.utility.nn_helpers import set_random_seed, get_dims_for_loader_dict
 from neuralpredictors.utils import get_module_output
 # from neuralpredictors.layers.encoders import FiringRateEncoder
 from neuralpredictors.layers.shifters import MLPShifter, StaticAffine2dShifter
 from neuralpredictors.layers.cores import (
     Stacked2dCore,
-    SE2dCore,
-    RotationEquivariant2dCore,
 )
 
-from .readouts import MultipleFullGaussian2d
-from .utility import prepare_grid
+from nnfabrik.builder import get_model
+from torch import nn
 
+from sensorium.models.readouts import MultipleFullGaussian2d
+from sensorium.models.utility import prepare_grid
 
 
 class FiringRateEncoder(nn.Module):
@@ -63,8 +68,7 @@ class FiringRateEncoder(nn.Module):
                 raise ValueError("behavior is not given")
             x = self.modulator[data_key](x, behavior=behavior)
 
-        result = nn.functional.elu(x + self.offset) + 1
-        return result ** 1.25
+        return nn.functional.elu(x + self.offset) + 1
 
     def regularizer(self, data_key=None, reduction="sum", average=None, detach_core=False):
         reg = self.core.regularizer().detach() if detach_core else self.core.regularizer()
@@ -185,6 +189,7 @@ def stacked_core_full_gauss_readout(
         use_avg_reg=use_avg_reg,
     )
 
+
     in_shapes_dict = {
         k: get_module_output(core, v[in_name])[1:]
         for k, v in session_shape_dict.items()
@@ -204,25 +209,6 @@ def stacked_core_full_gauss_readout(
         source_grids=source_grids,
     )
 
-    if shifter is True:
-        data_keys = [i for i in dataloaders.keys()]
-        if shifter_type == "MLP":
-            shifter = MLPShifter(
-                data_keys=data_keys,
-                input_channels=input_channels_shifter,
-                hidden_channels_shifter=hidden_channels_shifter,
-                shift_layers=shift_layers,
-                gamma_shifter=gamma_shifter,
-            )
-
-        elif shifter_type == "StaticAffine":
-            shifter = StaticAffine2dShifter(
-                data_keys=data_keys,
-                input_channels=input_channels_shifter,
-                bias=shifter_bias,
-                gamma_shifter=gamma_shifter,
-            )
-
     model = FiringRateEncoder(
         core=core,
         readout=readout,
@@ -231,3 +217,66 @@ def stacked_core_full_gauss_readout(
     )
 
     return model
+
+
+def init_model(dataloaders, seed=42):
+    model_config = {
+        'pad_input': False,
+        'layers': 4,
+        'input_kern': 9,
+        'gamma_input': 6.3831,
+        'gamma_readout': 0.0076,
+        'hidden_kern': 7,
+        'hidden_channels': 64,
+        'depth_separable': True,
+        'grid_mean_predictor': {
+            'type': 'cortex',
+            'input_dimensions': 2,
+            'hidden_layers': 1,
+            'hidden_features': 30,
+            'final_tanh': True
+        },
+        'init_sigma': 0.1,
+        'init_mu_range': 0.3,
+        'gauss_type': 'full',
+        'shifter': False,
+        'stack': -1,
+    }
+
+    model = stacked_core_full_gauss_readout(dataloaders, seed=seed, **model_config)
+
+    return model
+
+
+
+
+# def init_model(dataloaders):
+#     model_fn = 'sensorium.models.stacked_core_full_gauss_readout'
+#     model_config = {'pad_input': False,
+#                     'layers': 4,
+#                     'input_kern': 9,
+#                     'gamma_input': 6.3831,
+#                     'gamma_readout': 0.0076,
+#                     'hidden_kern': 7,
+#                     'hidden_channels': 64,
+#                     'depth_separable': True,
+#                     'grid_mean_predictor': {'type': 'cortex',
+#                                             'input_dimensions': 2,
+#                                             'hidden_layers': 1,
+#                                             'hidden_features': 30,
+#                                             'final_tanh': True},
+#                     'init_sigma': 0.1,
+#                     'init_mu_range': 0.3,
+#                     'gauss_type': 'full',
+#                     'shifter': False,
+#                     'stack': -1,
+#                     }
+#
+#     model = get_model(model_fn=model_fn,
+#                       model_config=model_config,
+#                       dataloaders=dataloaders,
+#                       seed=42, )
+#     return model
+
+
+

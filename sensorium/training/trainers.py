@@ -2,6 +2,7 @@ from functools import partial
 import numpy as np
 import torch
 from tqdm import tqdm
+import wandb
 
 from neuralpredictors.measures import modules
 from neuralpredictors.training import (
@@ -10,9 +11,40 @@ from neuralpredictors.training import (
     LongCycler,
 )
 from nnfabrik.utility.nn_helpers import set_random_seed
+from torch import nn
+
 
 from ..utility import scores
 from ..utility.scores import get_correlations, get_poisson_loss
+
+
+class PoissonLoss(nn.Module):
+    def __init__(self, bias=1e-12, per_neuron=False, avg=True):
+        """
+        Computes Poisson loss between the output and target. Loss is evaluated by computing log likelihood
+        (up to a constant offset dependent on the target) that
+        output prescribes the mean of the Poisson distribution and target is a sample from the distribution.
+
+        Args:
+            bias (float, optional): Value used to numerically stabilize evalution of the log-likelihood. This value is effecitvely added to the output during evaluation. Defaults to 1e-12.
+            per_neuron (bool, optional): If set to True, the average/total Poisson loss is returned for each entry of the last dimension (assumed to be enumeration neurons) separately. Defaults to False.
+            avg (bool, optional): If set to True, return mean loss. Otherwise returns the sum of loss. Defaults to True.
+        """
+        super().__init__()
+        self.bias = bias
+        self.per_neuron = per_neuron
+        self.avg = avg
+
+    def forward(self, output, target):
+        target = target.detach()
+        loss = output - target * torch.log(output + self.bias)
+        if not self.per_neuron:
+            return loss.mean() if self.avg else loss.sum()
+        else:
+            loss = loss.view(-1, loss.shape[-1])
+            return loss.mean(dim=0) if self.avg else loss.sum(dim=0)
+
+
 
 
 def standard_trainer(
@@ -73,9 +105,7 @@ def standard_trainer(
     Returns:
 
     """
-
     def full_objective(model, dataloader, data_key, *args, **kwargs):
-
         loss_scale = (
             np.sqrt(len(dataloader[data_key].dataset) / args[0].shape[0])
             if scale_loss
@@ -99,6 +129,7 @@ def standard_trainer(
     model.train()
 
     criterion = getattr(modules, loss_function)(avg=avg_loss)
+
     stop_closure = partial(
         getattr(scores, stop_function),
         dataloaders=dataloaders["validation"],
@@ -146,6 +177,11 @@ def standard_trainer(
                 avg=False,
             ),
         )
+        wandb.log({
+            'val/correlation': get_correlations(model, dataloaders['validation'], device='cuda').mean(),
+            'val/loss': get_poisson_loss(model, dataloaders['validation'],  device='cuda').sum()
+        })
+
         if hasattr(model, "tracked_values"):
             tracker_dict.update(model.tracked_values)
         tracker = MultipleObjectiveTracker(**tracker_dict)
@@ -180,12 +216,12 @@ def standard_trainer(
 
         # train over batches
         optimizer.zero_grad()
+        losses = []
         for batch_no, (data_key, data) in tqdm(
             enumerate(LongCycler(dataloaders["train"])),
             total=n_iterations,
             desc="Epoch {}".format(epoch),
         ):
-
             batch_args = list(data)
             batch_kwargs = data._asdict() if not isinstance(data, dict) else data
             loss = full_objective(
@@ -196,10 +232,13 @@ def standard_trainer(
                 **batch_kwargs,
                 detach_core=detach_core
             )
+            losses.append(loss.item())
             loss.backward()
             if (batch_no + 1) % optim_step_count == 0:
                 optimizer.step()
                 optimizer.zero_grad()
+        print('Train loss', np.mean(losses))
+        wandb.log({'train_loss': np.mean(losses)})
 
     ##### Model evaluation ####################################################################################################
     model.eval()

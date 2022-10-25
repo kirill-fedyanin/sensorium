@@ -65,6 +65,7 @@ def model_predictions(model, dataloader, data_key, device="cpu"):
 
     return target.numpy(), output.numpy()
 
+from tqdm import tqdm
 
 def get_correlations(
     model, dataloaders, tier=None, device="cpu", as_dict=False, per_neuron=True, **kwargs
@@ -85,7 +86,7 @@ def get_correlations(
     """
     correlations = {}
     dl = dataloaders[tier] if tier is not None else dataloaders
-    for k, v in dl.items():
+    for k, v in tqdm(dl.items()):
         target, output = model_predictions(
             dataloader=v, model=model, data_key=k, device=device
         )
