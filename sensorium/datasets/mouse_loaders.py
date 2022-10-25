@@ -187,7 +187,7 @@ def static_loader(
         except:
             more_transforms.insert(0, NeuroNormalizer(dat, exclude=exclude))
 
-    more_transforms.insert(0, StaticGaussianBlur())
+    # more_transforms.insert(0, StaticGaussianBlur())
 
     dat.transforms.extend(more_transforms)
 

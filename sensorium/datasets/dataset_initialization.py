@@ -2,7 +2,6 @@ import os
 from nnfabrik.builder import get_data
 
 
-
 def init_loaders(basepath, **kwargs):
     # as filenames, we'll select all 7 datasets
     filenames = [os.path.join(basepath, file) for file in os.listdir(basepath) if ".zip" in file ]

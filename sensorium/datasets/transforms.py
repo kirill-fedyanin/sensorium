@@ -11,6 +11,5 @@ from scipy.ndimage.filters import gaussian_filter
 class StaticGaussianBlur(StaticTransform):
     def __call__(self, x):
         sigma = 3
-        import ipdb; ipdb.set_trace()
         x.images = gaussian_filter(x.images, sigma=sigma)
         return x
